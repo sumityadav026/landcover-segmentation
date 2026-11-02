@@ -1,0 +1,88 @@
+# ==============================================================================
+# Configuration: Urban Land Cover Mapping via Deep Semantic Segmentation
+# Dataset: LandCover.ai (Adrian Boguszewski et al.)
+# ==============================================================================
+
+project:
+  name: "urban_land_cover_segmentation"
+  title: "Urban Land Cover Mapping via Deep Semantic Segmentation of Aerial Imagery"
+  seed: 42
+  description: "Academic deep learning benchmark for semantic segmentation of high-resolution aerial imagery"
+
+dataset:
+  name: "landcover.ai"
+  kaggle_slug: "adrianboguszewski/landcoverai"
+  raw_dir: "data/raw"
+  processed_dir: "data"
+  train_dir: "data/train"
+  val_dir: "data/val"
+  test_dir: "data/test"
+  
+  # Image and Tiling Specifications
+  tile_size: 512
+  stride: 512
+  image_channels: 3
+  edge_handling: "discard"  # Incomplete edge tiles smaller than 512x512 are discarded
+  
+  # Splitting Configuration
+  # Split strictly by source orthophoto to eliminate spatial autocorrelation / leakage
+  split_strategy: "source_image"
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+  
+  # Semantic Classes (LandCover.ai official schema)
+  # Note: LandCover.ai does not have a separate vegetation class; Woodland is used as the closest equivalent.
+  num_classes: 5
+  classes:
+    0: "Background"
+    1: "Building"
+    2: "Woodland"
+    3: "Water"
+    4: "Road"
+  
+  # Visual Palette (RGB)
+  class_colors:
+    0: [0, 0, 0]        # Background: Black
+    1: [255, 0, 0]      # Building: Red
+    2: [0, 255, 0]      # Woodland: Green
+    3: [0, 0, 255]      # Water: Blue
+    4: [255, 255, 0]    # Road: Yellow
+
+dataloaders:
+  batch_size: 8         # Free-tier Colab GPU recommended batch size (reduce to 4 if OOM)
+  val_batch_size: 8
+  test_batch_size: 8
+  num_workers: 2        # Optimized for Google Colab 2-vCPU environment
+  pin_memory: true
+  drop_last: false
+
+training:
+  epochs: 40
+  optimizer: "AdamW"
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  scheduler: "CosineAnnealingLR"
+  t_max: 40
+  early_stopping_patience: 10
+  mixed_precision: true
+  gradient_clip_val: 1.0
+  loss:
+    name: "Combined_CE_Dice"
+    ce_weight: 0.5
+    dice_weight: 0.5
+
+models:
+  encoder: "resnet34"
+  encoder_weights: "imagenet"
+  in_channels: 3
+  classes: 5
+  architectures:
+    - "unet"
+    - "deeplabv3plus"
+
+paths:
+  results_dir: "results"
+  checkpoints_dir: "checkpoints"
+  drive_mount_point: "/content/drive"
+  drive_project_dir: "/content/drive/MyDrive/landcover-segmentation"
