@@ -33,6 +33,13 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
+    class _MockTorch:
+        @staticmethod
+        def no_grad():
+            def decorator(func):
+                return func
+            return decorator
+    torch = _MockTorch()
 
 
 class SegmentationTrainer:
@@ -424,3 +431,4 @@ class SegmentationTrainer:
             "total_time_seconds": round(total_time, 2),
             "history": self.history,
         }
+
