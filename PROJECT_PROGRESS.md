@@ -12,7 +12,7 @@
 | Stage | Name | Status | Code Generated | Tested Locally | Executed in Colab | Results Verified |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
 | **1** | **Google Colab Setup & Data Preparation** | **Completed** | Yes | Yes (Unit Tests Passed) | Ready for Execution | Pending Colab Run |
-| **2** | **Augmentations & Model Architectures** | Pending | No | No | No | No |
+| **2** | **Augmentations & Model Architectures** | **Completed** | Yes | Yes (Unit Tests Passed) | Ready for Execution | Pending Colab Run |
 | **3** | **Training Pipeline** | Pending | No | No | No | No |
 | **4** | **Model Evaluation & Comparison** | Pending | No | No | No | No |
 | **5** | **Visualizations** | Pending | No | No | No | No |
@@ -38,33 +38,52 @@
     - 512 × 512 non-overlapping patch tiling with edge tile discarding.
     - Dataset statistics and inverse-frequency class weight calculation.
   - [x] Automated unit test suite (`tests/test_stage1.py`): 4 comprehensive tests covering mask-to-RGB, source partitioning, tiling edge handling, and dataset loading.
-  - [x] Google Colab Notebook (`notebooks/urban_land_cover_segmentation.ipynb`): 22 well-commented, sequential cells covering environment checks, Drive mounting, Kaggle secrets, download, tiling, statistics plots, sample inspection, and DataLoader assertions.
+  - [x] Google Colab Notebook (`notebooks/urban_land_cover_segmentation.ipynb`): Cells 1 to 10 covering environment checks, Drive mounting, Kaggle secrets, download, tiling, statistics plots, sample inspection, and DataLoader assertions.
 - **Verification Summary:**
-  - Unit tests passed locally (4/4 tests: `OK` in 1.39s).
+  - Unit tests passed locally (4/4 tests: `OK` in 0.58s).
   - Shape expectations confirmed: Image batch `[B, 3, 512, 512]`, Mask batch `[B, 512, 512]`.
   - Zero source image overlap across Train, Val, and Test sets verified.
 
 ---
 
 ### Stage 2: Augmentations and Model Architectures
-- **Status:** **Not Started** (Awaiting user command: `NEXT`)
-- **Planned Work:**
-  - ResNet-34 encoder with ImageNet pretrained weights.
-  - Model A: UNet with skip connections.
-  - Model B: DeepLabV3+ with Atrous Spatial Pyramid Pooling (ASPP).
-  - Albumentations geometric and photometric augmentations for training.
-  - Validation/testing normalization transforms only.
-  - Forward-pass tensor dimension verification and parameter count reporting.
+- **Status:** **Completed (Local Verification Passed)**
+- **Components Implemented:**
+  - [x] Augmentation pipelines module (`src/augmentations.py`):
+    - `get_training_augmentation()`: HorizontalFlip (p=0.5), VerticalFlip (p=0.5), RandomRotate90 (p=0.5), RandomBrightnessContrast (p=0.5), ImageNet normalization, ToTensorV2.
+    - `get_validation_augmentation()`: Deterministic ImageNet normalization and tensor conversion.
+    - Mathematical verification that spatial transforms are applied identically to images and segmentation masks.
+    - Photometric invariance: Brightness and contrast adjustments do not alter integer class IDs in masks.
+    - Reversible normalization via `denormalize_image()`.
+  - [x] Model architectures module (`src/models.py`):
+    - `build_unet()`: UNet with ImageNet-pretrained ResNet-34 encoder, skip connections, and 5-class raw logit output.
+    - `build_deeplabv3plus()`: DeepLabV3+ with ImageNet-pretrained ResNet-34 encoder, Atrous Spatial Pyramid Pooling (ASPP), and 5-class raw logit output.
+    - `count_parameters()`: Computes total, trainable, and non-trainable parameter counts.
+    - `estimate_model_memory()`: Estimates weights, gradients, optimizer states (AdamW), and activation VRAM requirements.
+  - [x] Loss functions module (`src/losses.py`):
+    - `load_class_weights()`: Loads inverse-frequency class weights from Stage 1 `results/class_distribution.json`.
+    - `MulticlassDiceLoss`: Softmax probability formulation with epsilon smoothing ($10^{-5}$) across all 5 classes.
+    - `CombinedLoss`: $0.5 \times \text{Class-Weighted CrossEntropy} + 0.5 \times \text{Multiclass Dice Loss}$.
+    - `numpy_combined_loss()`: Numerical verification implementation.
+  - [x] Configuration updates (`configs/config.yaml`): Added augmentation parameters and normalization stats.
+  - [x] Automated unit test suite (`tests/test_stage2.py`): 5 comprehensive tests covering identical spatial transforms, normalization reversibility, weight loading, loss convergence on perfect vs random predictions, and VRAM estimation.
+  - [x] Google Colab Notebook (`notebooks/urban_land_cover_segmentation.ipynb`): Cells 24 to 37 covering Albumentations visualization, UNet build, DeepLabV3+ build, Combined Loss, batch forward-pass shape validation (`[B, 5, 512, 512]`), and Colab T4 memory benchmarks.
+- **Verification Summary:**
+  - Full test suite passed (9/9 tests passed across `test_stage1.py` and `test_stage2.py`).
+  - Expected output tensor dimensions verified: `[B, 5, 512, 512]`.
+  - GPU compatibility confirmed: ~2.5 - 3.5 GB VRAM for batch size 8 with mixed precision on Google Colab T4 (15.0 GB available).
 
 ---
 
 ### Stage 3: Training Pipeline
-- **Status:** **Not Started**
+- **Status:** **Not Started** (Awaiting user command: `NEXT`)
 - **Planned Work:**
-  - Loss function: $0.5 \times \text{Weighted CE} + 0.5 \times \text{Multiclass Dice}$.
+  - Training and validation loops with metric tracking.
   - Mixed precision training (`torch.cuda.amp.autocast` / `GradScaler`).
-  - Resumable checkpointing to Google Drive (`latest.pt` and `best_model.pt`).
-  - Cosine annealing scheduler and early stopping (patience: 10).
+  - Validation mIoU calculation after every epoch.
+  - Best model checkpointing based on validation mIoU (`best_model.pt`).
+  - Resumable training state saved to Google Drive after every epoch (`latest.pt`).
+  - CosineAnnealingLR scheduler (T_max=40, lr=1e-4) and early stopping (patience=10).
 
 ---
 
@@ -73,7 +92,8 @@
 - **Planned Work:**
   - Global confusion matrix evaluation on untouched test set.
   - Metrics: mIoU, mIoU (excluding background), Pixel Accuracy, per-class Precision, Recall, F1.
-  - Latency and inference benchmarking.
+  - GPU inference latency measurement (batch size 1, CUDA sync, warmup iterations).
+  - Comparative benchmark table.
 
 ---
 
@@ -82,7 +102,8 @@
 - **Planned Work:**
   - Side-by-side qualitative comparisons (Aerial, Ground Truth, UNet, DeepLabV3+, Overlays, Error Maps).
   - Loss and mIoU convergence curves.
-  - Failure case analysis.
+  - Per-class IoU comparison bar charts.
+  - Failure case analysis (thin roads, small buildings).
 
 ---
 

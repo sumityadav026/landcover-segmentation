@@ -103,8 +103,9 @@ def load_mask(file_path: str) -> np.ndarray:
 
 def get_default_transform(split: str = "train") -> Any:
     """
-    Create default Albumentations transform for Stage 1 / Stage 2.
-    Converts RGB image to normalized FloatTensor [3, H, W] and mask to LongTensor [H, W].
+    Create default Albumentations transform for Stage 2.
+    For train: HorizontalFlip, VerticalFlip, RandomRotate90, Brightness/Contrast, ImageNet Normalization.
+    For val/test: ImageNet Normalization only.
 
     Args:
         split: 'train', 'val', or 'test'.
@@ -112,25 +113,22 @@ def get_default_transform(split: str = "train") -> Any:
     Returns:
         Albumentations Compose transform or None if albumentations is unavailable.
     """
-    if not ALBUMENTATIONS_AVAILABLE:
-        return None
+    try:
+        from src.augmentations import get_training_augmentation, get_validation_augmentation
+        if split == "train":
+            return get_training_augmentation()
+        else:
+            return get_validation_augmentation()
+    except (ImportError, Exception):
+        if not ALBUMENTATIONS_AVAILABLE:
+            return None
 
-    # ImageNet standard normalization parameters
-    mean = (0.485, 0.456, 0.406)
-    std = (0.229, 0.224, 0.225)
-
-    if split == "train":
-        transform = A.Compose([
+        mean = (0.485, 0.456, 0.406)
+        std = (0.229, 0.224, 0.225)
+        return A.Compose([
             A.Normalize(mean=mean, std=std, max_pixel_value=255.0),
             ToTensorV2(transpose_mask=False),
         ])
-    else:
-        transform = A.Compose([
-            A.Normalize(mean=mean, std=std, max_pixel_value=255.0),
-            ToTensorV2(transpose_mask=False),
-        ])
-
-    return transform
 
 
 class LandCoverDataset(Dataset):
@@ -372,3 +370,4 @@ def get_dataloaders(
     )
 
     return train_loader, val_loader, test_loader
+

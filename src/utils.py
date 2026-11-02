@@ -164,3 +164,4 @@ def load_json(file_path: str) -> Dict[str, Any]:
         raise FileNotFoundError(f"JSON file not found: {file_path}")
     with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
+

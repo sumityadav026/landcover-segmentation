@@ -96,8 +96,8 @@ cd landcover-segmentation
 # Install dependencies
 pip install -r requirements.txt
 
-# Run Stage 1 automated unit tests
-python3 -m unittest tests/test_stage1.py
+# Run complete automated unit test suite (Stage 1 & Stage 2)
+python3 -m unittest discover -s tests -p "test_*.py"
 ```
 
 ### Google Colab Execution
@@ -114,8 +114,9 @@ python3 -m unittest tests/test_stage1.py
 ## 5. Development Roadmap
 
 - [x] **Stage 1: Google Colab Setup and Data Preparation** *(Completed)*
-- [ ] **Stage 2: Augmentations and Model Architectures** *(Pending user command `NEXT`)*
-- [ ] **Stage 3: Training Pipeline**
+- [x] **Stage 2: Augmentations and Model Architectures** *(Completed)*
+- [ ] **Stage 3: Training Pipeline** *(Pending user command `NEXT`)*
 - [ ] **Stage 4: Model Evaluation and Comparison**
 - [ ] **Stage 5: Visualizations**
 - [ ] **Stage 6: Final Report and Documentation**
+
