@@ -163,3 +163,4 @@ class MetricTracker:
             "miou_no_bg": round(miou_no_bg, 5),
             "pixel_accuracy": round(pixel_acc, 5),
         }
+

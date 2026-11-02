@@ -13,7 +13,7 @@
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
 | **1** | **Google Colab Setup & Data Preparation** | **Completed** | Yes | Yes (Unit Tests Passed) | Ready for Execution | Pending Colab Run |
 | **2** | **Augmentations & Model Architectures** | **Completed** | Yes | Yes (Unit Tests Passed) | Ready for Execution | Pending Colab Run |
-| **3** | **Training Pipeline** | **Completed** | Yes | Yes (Unit Tests Passed) | Ready for Execution | Pending Colab Run |
+| **3** | **Training Pipeline & Colab Resilience** | **Completed** | Yes | Yes (Unit Tests Passed) | Ready for Execution | Pending Colab Run |
 | **4** | **Model Evaluation & Comparison** | Pending | No | No | No | No |
 | **5** | **Visualizations** | Pending | No | No | No | No |
 | **6** | **Final Report & Documentation** | Pending | No | No | No | No |
@@ -75,7 +75,7 @@
 
 ---
 
-### Stage 3: Training Pipeline
+### Stage 3: Training Pipeline & Colab Resilience
 - **Status:** **Completed (Local Verification Passed)**
 - **Components Implemented:**
   - [x] Metrics tracking module (`src/metrics.py`):
@@ -94,16 +94,25 @@
     - Wall-clock epoch timing and total duration tracking.
     - Graceful CUDA out-of-memory handling.
     - Untouched test set: test data is strictly isolated from the training and validation loops.
+  - [x] **Colab Recovery & Resilience Engine (`src/recovery.py`):**
+    - `mount_google_drive()`: Detects and mounts persistent Google Drive storage.
+    - `restore_project_codebase()`: Restores `src/` and `configs/` from persistent Drive backup or ZIP archive.
+    - `check_dataset_persistence()`: Verifies if processed 512x512 dataset exists on Drive; prevents redundant Kaggle downloads or re-tiling.
+    - `scan_checkpoints()`: Detects existing `unet_latest.pt` and `deeplabv3plus_latest.pt` checkpoints on Drive, reporting epoch and mIoU.
+    - `build_or_resume_trainer()`: One-line training reconstructor with automatic checkpoint restoration and smoke-test support.
+    - `generate_recovery_dashboard()`: ASCII recovery status summary.
+  - [x] **Notebook Recovery Integration (`notebooks/urban_land_cover_segmentation.ipynb`):**
+    - Master Colab Recovery Cell (Cell 2.1) executed after any runtime disconnection.
+    - Data-skip guards for Sections 5 and 7 so existing data is never re-processed.
+    - Dedicated 1-epoch U-Net smoke-test cell (Section 18.1).
   - [x] Command-line training interface (`src/train.py`):
     - CLI supporting `--model unet|deeplabv3plus|both`, `--epochs`, `--batch_size`, `--resume`.
-  - [x] Automated unit test suite (`tests/test_stage3.py`):
-    - 5 tests covering metric tracker accuracy, analytical confusion matrix verification, checkpoint state serialization and restoration, best checkpoint protection logic, and early stopping patience triggers.
-  - [x] Google Colab Notebook (`notebooks/urban_land_cover_segmentation.ipynb`):
-    - Cells 38 to 51 implementing Drive checkpoint directory configuration, metric tracker verification, UNet training, DeepLabV3+ training, resumption demonstration, and 4-panel training curve visualizations.
+  - [x] Automated unit test suite (`tests/test_stage3.py` & `tests/test_recovery.py`):
+    - 10 tests covering metrics, serialization, resumption, best checkpoint protection, early stopping, dataset persistence detection, checkpoint scanning, and recovery dashboard.
 - **Verification Summary:**
-  - Full automated test suite passing: **14 of 14 unit tests passed** across Stages 1, 2, and 3 (`Ran 14 tests in 0.578s: OK`).
+  - Full automated test suite passing: **19 of 19 unit tests passed** across Stages 1, 2, and 3 (`Ran 19 tests in 0.587s: OK`).
   - Checkpoint integrity and resumption logic validated.
-  - Best checkpoint protection logic validated.
+  - Drive dataset persistence detection validated.
 
 ---
 

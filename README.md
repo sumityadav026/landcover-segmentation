@@ -114,11 +114,27 @@ python3 src/train.py --model both --epochs 40 --batch_size 8
 
 ---
 
-## 5. Development Roadmap
+## 5. Google Colab Recovery & Disconnection Guide
+
+Google Colab free-tier runtimes reset when idle or when exceeding session limits, clearing ephemeral `/content/` storage. This project includes an automated resilience engine so you **never lose training progress or re-download datasets**:
+
+### 3-Step Recovery Workflow After Any Disconnection:
+1. **Reconnect Runtime:** Reconnect to Colab and ensure **T4 GPU** is selected (*Runtime > Change runtime type*).
+2. **Mount Google Drive:** Run Cell 4 and grant authorization when prompted.
+3. **Execute Cell 2.1 (Master Recovery Cell):**
+   * Automatically restores `src/` and `configs/` from persistent Drive storage.
+   * Detects the processed dataset in Google Drive (*never re-downloads or re-tiles*).
+   * Locates your latest training checkpoints (`unet_latest.pt`, `deeplabv3plus_latest.pt`).
+   * Displays the **Recovery Dashboard** indicating your exact epoch and validation mIoU.
+4. **Resume Training:** Jump straight to Section 19 (UNet) or Section 20 (DeepLabV3+) to resume training from the exact saved epoch!
+
+---
+
+## 6. Development Roadmap
 
 - [x] **Stage 1: Google Colab Setup and Data Preparation** *(Completed)*
 - [x] **Stage 2: Augmentations and Model Architectures** *(Completed)*
-- [x] **Stage 3: Training Pipeline** *(Completed)*
+- [x] **Stage 3: Training Pipeline & Colab Resilience** *(Completed)*
 - [ ] **Stage 4: Model Evaluation and Comparison** *(Pending user command `NEXT`)*
 - [ ] **Stage 5: Visualizations**
 - [ ] **Stage 6: Final Report and Documentation**
