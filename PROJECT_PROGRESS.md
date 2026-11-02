@@ -13,7 +13,7 @@
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
 | **1** | **Google Colab Setup & Data Preparation** | **Completed** | Yes | Yes (Unit Tests Passed) | Ready for Execution | Pending Colab Run |
 | **2** | **Augmentations & Model Architectures** | **Completed** | Yes | Yes (Unit Tests Passed) | Ready for Execution | Pending Colab Run |
-| **3** | **Training Pipeline** | Pending | No | No | No | No |
+| **3** | **Training Pipeline** | **Completed** | Yes | Yes (Unit Tests Passed) | Ready for Execution | Pending Colab Run |
 | **4** | **Model Evaluation & Comparison** | Pending | No | No | No | No |
 | **5** | **Visualizations** | Pending | No | No | No | No |
 | **6** | **Final Report & Documentation** | Pending | No | No | No | No |
@@ -69,26 +69,46 @@
   - [x] Automated unit test suite (`tests/test_stage2.py`): 5 comprehensive tests covering identical spatial transforms, normalization reversibility, weight loading, loss convergence on perfect vs random predictions, and VRAM estimation.
   - [x] Google Colab Notebook (`notebooks/urban_land_cover_segmentation.ipynb`): Cells 24 to 37 covering Albumentations visualization, UNet build, DeepLabV3+ build, Combined Loss, batch forward-pass shape validation (`[B, 5, 512, 512]`), and Colab T4 memory benchmarks.
 - **Verification Summary:**
-  - Full test suite passed (9/9 tests passed across `test_stage1.py` and `test_stage2.py`).
+  - Tests passed (9/9 tests passed across Stage 1 and Stage 2).
   - Expected output tensor dimensions verified: `[B, 5, 512, 512]`.
   - GPU compatibility confirmed: ~2.5 - 3.5 GB VRAM for batch size 8 with mixed precision on Google Colab T4 (15.0 GB available).
 
 ---
 
 ### Stage 3: Training Pipeline
-- **Status:** **Not Started** (Awaiting user command: `NEXT`)
-- **Planned Work:**
-  - Training and validation loops with metric tracking.
-  - Mixed precision training (`torch.cuda.amp.autocast` / `GradScaler`).
-  - Validation mIoU calculation after every epoch.
-  - Best model checkpointing based on validation mIoU (`best_model.pt`).
-  - Resumable training state saved to Google Drive after every epoch (`latest.pt`).
-  - CosineAnnealingLR scheduler (T_max=40, lr=1e-4) and early stopping (patience=10).
+- **Status:** **Completed (Local Verification Passed)**
+- **Components Implemented:**
+  - [x] Metrics tracking module (`src/metrics.py`):
+    - `MetricTracker`: Running confusion matrix accumulator using fast bincount.
+    - Computes per-class IoU, global Mean IoU (mIoU), mIoU excluding background, and Pixel Accuracy.
+  - [x] Standardized training engine (`src/trainer.py`):
+    - `SegmentationTrainer`: Reusable class managing training and validation loops under 100% identical conditions for both UNet and DeepLabV3+.
+    - Automatic Mixed Precision (`torch.cuda.amp.autocast`) and gradient scaling (`GradScaler`).
+    - Gradient clipping with `max_norm=1.0`.
+    - Optimizer: AdamW (`lr=1e-4`, `weight_decay=1e-4`).
+    - Scheduler: CosineAnnealingLR (`T_max=40`, `eta_min=1e-6`).
+    - Epoch-wise validation mIoU calculation.
+    - Resumable checkpointing: saves `latest.pt` every epoch to Google Drive, and saves `best.pt` strictly on validation mIoU improvement (never overwritten by worse models).
+    - Full checkpoint resumption (`trainer.resume(path)`) restoring weights, optimizer, scheduler, scaler, epoch index, and history.
+    - Early stopping with configurable patience (10 epochs).
+    - Wall-clock epoch timing and total duration tracking.
+    - Graceful CUDA out-of-memory handling.
+    - Untouched test set: test data is strictly isolated from the training and validation loops.
+  - [x] Command-line training interface (`src/train.py`):
+    - CLI supporting `--model unet|deeplabv3plus|both`, `--epochs`, `--batch_size`, `--resume`.
+  - [x] Automated unit test suite (`tests/test_stage3.py`):
+    - 5 tests covering metric tracker accuracy, analytical confusion matrix verification, checkpoint state serialization and restoration, best checkpoint protection logic, and early stopping patience triggers.
+  - [x] Google Colab Notebook (`notebooks/urban_land_cover_segmentation.ipynb`):
+    - Cells 38 to 51 implementing Drive checkpoint directory configuration, metric tracker verification, UNet training, DeepLabV3+ training, resumption demonstration, and 4-panel training curve visualizations.
+- **Verification Summary:**
+  - Full automated test suite passing: **14 of 14 unit tests passed** across Stages 1, 2, and 3 (`Ran 14 tests in 0.578s: OK`).
+  - Checkpoint integrity and resumption logic validated.
+  - Best checkpoint protection logic validated.
 
 ---
 
 ### Stage 4: Model Evaluation and Comparison
-- **Status:** **Not Started**
+- **Status:** **Not Started** (Awaiting user command: `NEXT`)
 - **Planned Work:**
   - Global confusion matrix evaluation on untouched test set.
   - Metrics: mIoU, mIoU (excluding background), Pixel Accuracy, per-class Precision, Recall, F1.

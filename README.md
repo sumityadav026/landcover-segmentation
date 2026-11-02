@@ -96,8 +96,11 @@ cd landcover-segmentation
 # Install dependencies
 pip install -r requirements.txt
 
-# Run complete automated unit test suite (Stage 1 & Stage 2)
+# Run complete automated unit test suite (Stages 1, 2 & 3)
 python3 -m unittest discover -s tests -p "test_*.py"
+
+# Optional: Run command-line model training
+python3 src/train.py --model both --epochs 40 --batch_size 8
 ```
 
 ### Google Colab Execution
@@ -115,8 +118,8 @@ python3 -m unittest discover -s tests -p "test_*.py"
 
 - [x] **Stage 1: Google Colab Setup and Data Preparation** *(Completed)*
 - [x] **Stage 2: Augmentations and Model Architectures** *(Completed)*
-- [ ] **Stage 3: Training Pipeline** *(Pending user command `NEXT`)*
-- [ ] **Stage 4: Model Evaluation and Comparison**
+- [x] **Stage 3: Training Pipeline** *(Completed)*
+- [ ] **Stage 4: Model Evaluation and Comparison** *(Pending user command `NEXT`)*
 - [ ] **Stage 5: Visualizations**
 - [ ] **Stage 6: Final Report and Documentation**
 

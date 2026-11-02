@@ -242,3 +242,4 @@ def estimate_model_memory(
         "total_inference_gb": round(total_inference_gb, 2),
         "fits_colab_t4": total_training_gb < 14.5,  # Colab T4 has ~15 GB VRAM
     }
+

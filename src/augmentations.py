@@ -166,3 +166,4 @@ def denormalize_image(
     denorm = (arr * std_arr + mean_arr) * 255.0
     denorm = np.clip(denorm, 0.0, 255.0).astype(np.uint8)
     return denorm
+
