@@ -13,7 +13,9 @@ import argparse
 import logging
 from typing import Any, Optional, Dict, Tuple, List
 
-sys.path.insert(0, os.path.abspath("."))
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from src.utils import logger, set_seed
 from src.dataset import get_dataloaders

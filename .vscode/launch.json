@@ -1,0 +1,85 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Streamlit: Run Interactive Demo (app.py)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "${workspaceFolder}/app.py"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Run Data Preparation (src/prepare_data.py)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/prepare_data.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Train U-Net (5 Epochs)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/train.py",
+            "args": [
+                "--model", "unet",
+                "--epochs", "5",
+                "--batch_size", "8"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Train DeepLabV3+ (5 Epochs)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/train.py",
+            "args": [
+                "--model", "deeplabv3plus",
+                "--epochs", "5",
+                "--batch_size", "8"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Evaluate Models & Benchmark Latency",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/evaluate.py",
+            "args": [
+                "--config", "configs/config.yaml",
+                "--model", "both"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Generate Figures & Visualizations",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/visualize.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Run All Unit Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "unittest",
+            "args": [
+                "discover",
+                "-s", "tests",
+                "-p", "test_*.py"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}
+

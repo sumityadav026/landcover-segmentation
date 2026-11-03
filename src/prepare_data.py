@@ -7,6 +7,12 @@ and dataset class statistics calculation.
 
 import os
 import sys
+
+# Ensure project root is in sys.path when executed directly in VS Code
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 import glob
 import json
 import logging
