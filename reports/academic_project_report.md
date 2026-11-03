@@ -306,3 +306,4 @@ To provide uninterrupted execution, our framework includes an autonomous resilie
 6. Iakubovskii, P. (2019). *Segmentation Models PyTorch.* GitHub repository, `https://github.com/qubvel/segmentation_models.pytorch`.
 7. Karasiak, N., Dejoux, J. F., Monteil, C., & Sheeren, D. (2022). *Spatial dependence between training and test sets in remote sensing classification: A critical overview.* Remote Sensing of Environment, 269, 112800.
 8. Tobler, W. R. (1970). *A computer movie simulating urban growth in the Detroit region.* Economic Geography, 46(sup1), 234–240.
+

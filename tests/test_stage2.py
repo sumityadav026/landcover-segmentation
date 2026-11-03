@@ -71,7 +71,7 @@ class TestStage2ModelDevelopment(unittest.TestCase):
         self.assertLessEqual(max_diff, 1)
 
     def test_load_class_weights(self):
-        """Verify that class weights from Stage 1 dataset statistics load properly."""
+        """Verify that class weights from Stage 1 dataset statistics or class_weights.json load properly."""
         weights = load_class_weights("results/class_distribution.json")
         if hasattr(weights, "tolist"):
             weights = weights.tolist()
@@ -79,6 +79,22 @@ class TestStage2ModelDevelopment(unittest.TestCase):
         self.assertEqual(len(weights), 5)
         for w in weights:
             self.assertGreater(w, 0.0, "Class weight must be strictly positive")
+
+        # Test loading from custom class_weights.json format
+        custom_weights_path = "tests/temp_test_weights.json"
+        import json
+        with open(custom_weights_path, "w") as f:
+            json.dump({"0": 0.5, "1": 2.5, "2": 1.2, "3": 1.8, "4": 3.1}, f)
+
+        try:
+            loaded_custom = load_class_weights(custom_weights_path)
+            if hasattr(loaded_custom, "tolist"):
+                loaded_custom = loaded_custom.tolist()
+            self.assertEqual(len(loaded_custom), 5)
+            self.assertAlmostEqual(loaded_custom[1], 2.5, places=4)
+        finally:
+            if os.path.exists(custom_weights_path):
+                os.remove(custom_weights_path)
 
     def test_numpy_combined_loss_perfect_vs_random_predictions(self):
         """Verify that combined loss (0.5 CE + 0.5 Dice) behaves correctly."""

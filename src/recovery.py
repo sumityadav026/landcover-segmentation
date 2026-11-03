@@ -209,30 +209,39 @@ def check_dataset_persistence(
             "skip_data_preparation": True,
         }
 
-    # 2. Check Google Drive dataset directory
-    if os.path.exists(drive_data_dir):
-        drive_counts = count_tiles(drive_data_dir)
-        if drive_counts.get("train", 0) > 0 and drive_counts.get("val", 0) > 0:
-            logger.info(f"Verified processed dataset on Google Drive: {drive_data_dir} ({drive_counts})")
-            
-            # In Colab, symlink or copy to /content/data for fast I/O if possible
-            if is_colab_environment():
-                os.makedirs(os.path.dirname(os.path.abspath(local_data_dir)), exist_ok=True)
-                if not os.path.exists(local_data_dir):
-                    try:
-                        os.symlink(drive_data_dir, local_data_dir)
-                        logger.info(f"Created symlink: {local_data_dir} -> {drive_data_dir}")
-                    except Exception:
-                        pass
+    # 2. Check Google Drive dataset directories (search multiple common structures)
+    candidate_drive_dirs = [
+        drive_data_dir,
+        drive_project_dir,
+        os.path.join(drive_mount_point, "MyDrive", "data"),
+        os.path.join(drive_mount_point, "MyDrive", "landcoverai", "data"),
+        os.path.join(drive_mount_point, "MyDrive", "LandCover.ai", "data"),
+    ]
 
-            active_dir = local_data_dir if os.path.exists(local_data_dir) else drive_data_dir
-            return {
-                "ready": True,
-                "location": active_dir,
-                "storage_type": "google_drive",
-                "counts": drive_counts,
-                "skip_data_preparation": True,
-            }
+    for candidate_dir in candidate_drive_dirs:
+        if os.path.exists(candidate_dir):
+            drive_counts = count_tiles(candidate_dir)
+            if drive_counts.get("train", 0) > 0 and drive_counts.get("val", 0) > 0:
+                logger.info(f"Verified processed dataset on Google Drive: {candidate_dir} ({drive_counts})")
+
+                # In Colab, symlink or copy to /content/data for fast I/O if possible
+                if is_colab_environment():
+                    os.makedirs(os.path.dirname(os.path.abspath(local_data_dir)), exist_ok=True)
+                    if not os.path.exists(local_data_dir):
+                        try:
+                            os.symlink(candidate_dir, local_data_dir)
+                            logger.info(f"Created symlink: {local_data_dir} -> {candidate_dir}")
+                        except Exception:
+                            pass
+
+                active_dir = local_data_dir if (os.path.exists(local_data_dir) and count_tiles(local_data_dir).get("train", 0) > 0) else candidate_dir
+                return {
+                    "ready": True,
+                    "location": active_dir,
+                    "storage_type": "google_drive",
+                    "counts": drive_counts,
+                    "skip_data_preparation": True,
+                }
 
     # 3. Check Google Drive compressed archive
     if os.path.exists(drive_tar):
@@ -273,8 +282,17 @@ def scan_checkpoints(checkpoint_dir: str) -> Dict[str, Any]:
     summary: Dict[str, Any] = {}
 
     for model_name in models:
-        latest_file = os.path.join(checkpoint_dir, f"{model_name}_latest.pt")
-        best_file = os.path.join(checkpoint_dir, f"{model_name}_best.pt")
+        candidates_latest = [
+            os.path.join(checkpoint_dir, f"{model_name}_latest.pt"),
+            os.path.join(checkpoint_dir, model_name, "latest.pt"),
+        ]
+        candidates_best = [
+            os.path.join(checkpoint_dir, f"{model_name}_best.pt"),
+            os.path.join(checkpoint_dir, model_name, "best.pt"),
+        ]
+
+        latest_file = next((f for f in candidates_latest if os.path.exists(f) and os.path.getsize(f) > 1024), None)
+        best_file = next((f for f in candidates_best if os.path.exists(f) and os.path.getsize(f) > 1024), None)
 
         info: Dict[str, Any] = {
             "has_latest": False,
@@ -288,7 +306,7 @@ def scan_checkpoints(checkpoint_dir: str) -> Dict[str, Any]:
         }
 
         # Inspect latest checkpoint
-        if os.path.exists(latest_file) and os.path.getsize(latest_file) > 1024:
+        if latest_file is not None:
             info["has_latest"] = True
             info["latest_path"] = latest_file
             info["can_resume"] = True
@@ -302,7 +320,7 @@ def scan_checkpoints(checkpoint_dir: str) -> Dict[str, Any]:
                     logger.warning(f"Could not read header of {latest_file}: {e}")
 
         # Inspect best checkpoint
-        if os.path.exists(best_file) and os.path.getsize(best_file) > 1024:
+        if best_file is not None:
             info["has_best"] = True
             info["best_path"] = best_file
             if TORCH_AVAILABLE and not info["has_latest"]:

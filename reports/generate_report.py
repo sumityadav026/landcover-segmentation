@@ -579,3 +579,4 @@ def generate_all_reports() -> Dict[str, str]:
 
 if __name__ == "__main__":
     generate_all_reports()
+

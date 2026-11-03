@@ -25,39 +25,89 @@ except ImportError:
 
 
 def load_class_weights(
-    weights_path: str = "results/class_distribution.json",
+    weights_path: str = "results/class_weights.json",
     device: Optional[Any] = None,
 ) -> Any:
     """
-    Load class weights from Stage 1 dataset statistics.
+    Load class weights derived from dataset statistics (training-only or global).
+
+    Searches in order:
+      1. Provided weights_path (default: 'results/class_weights.json')
+      2. '/content/drive/MyDrive/landcover-segmentation/results/class_weights.json'
+      3. 'results/class_distribution.json'
+      4. '/content/drive/MyDrive/landcover-segmentation/results/class_distribution.json'
+      5. 'results/dataset_statistics.json'
+
+    Supports formats:
+      - List of 5 floats: [w0, w1, w2, w3, w4]
+      - Dict mapping class IDs to floats: {"0": w0, ...} or {0: w0, ...}
+      - Dict containing "class_weights" or "class_weights_ce" or "weights" key
+      - Dict containing "class_distribution" with "ce_weight" per entry
+      - Dict of dicts: {"0": {"ce_weight": ...}, ...}
 
     Args:
-        weights_path: Path to class_distribution.json or dataset_statistics.json.
+        weights_path: Path to class weights JSON file.
         device: PyTorch device ('cuda' or 'cpu').
 
     Returns:
         PyTorch FloatTensor of shape [5] or list of float weights.
     """
-    if not os.path.exists(weights_path):
-        logger.warning(f"Class weights file not found at {weights_path}. Using uniform weights.")
+    candidate_paths = [
+        weights_path,
+        "results/class_weights.json",
+        "/content/drive/MyDrive/landcover-segmentation/results/class_weights.json",
+        "results/class_distribution.json",
+        "/content/drive/MyDrive/landcover-segmentation/results/class_distribution.json",
+        "results/dataset_statistics.json",
+    ]
+
+    resolved_path = None
+    for p in candidate_paths:
+        if p and os.path.exists(p):
+            resolved_path = p
+            break
+
+    if resolved_path is None:
+        logger.warning(
+            f"Class weights file not found (checked: {candidate_paths[:3]}). "
+            "Using uniform weights [1.0, 1.0, 1.0, 1.0, 1.0]."
+        )
         weights = [1.0] * 5
     else:
-        with open(weights_path, "r", encoding="utf-8") as f:
+        with open(resolved_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        # Handle class_distribution.json structure or dataset_statistics.json structure
-        if "class_weights_ce" in data:
-            weight_dict = data["class_weights_ce"]
-        elif "class_distribution" in data:
-            weight_dict = {k: v["ce_weight"] for k, v in data["class_distribution"].items()}
-        elif "0" in data and isinstance(data["0"], dict) and "ce_weight" in data["0"]:
-            weight_dict = {k: v["ce_weight"] for k, v in data.items()}
+        logger.info(f"Loading class weights from: {resolved_path}")
+
+        # Unpack various JSON formats
+        if isinstance(data, list):
+            weights = [float(w) for w in data[:5]]
         else:
-            weight_dict = data
+            if "class_weights" in data:
+                sub = data["class_weights"]
+                if isinstance(sub, list):
+                    weights = [float(w) for w in sub[:5]]
+                else:
+                    weights = [float(sub.get(str(i), sub.get(i, 1.0))) for i in range(5)]
+            elif "class_weights_ce" in data:
+                sub = data["class_weights_ce"]
+                weights = [float(sub.get(str(i), sub.get(i, 1.0))) for i in range(5)]
+            elif "weights" in data:
+                sub = data["weights"]
+                weights = [float(w) for w in sub[:5]] if isinstance(sub, list) else [float(sub.get(str(i), sub.get(i, 1.0))) for i in range(5)]
+            elif "class_distribution" in data:
+                weight_dict = {str(k): v["ce_weight"] for k, v in data["class_distribution"].items()}
+                weights = [float(weight_dict[str(i)]) for i in range(5)]
+            elif "0" in data and isinstance(data["0"], dict) and "ce_weight" in data["0"]:
+                weight_dict = {str(k): v["ce_weight"] for k, v in data.items()}
+                weights = [float(weight_dict[str(i)]) for i in range(5)]
+            elif 0 in data and isinstance(data[0], dict) and "ce_weight" in data[0]:
+                weight_dict = {str(k): v["ce_weight"] for k, v in data.items()}
+                weights = [float(weight_dict[str(i)]) for i in range(5)]
+            else:
+                weights = [float(data.get(str(i), data.get(i, 1.0))) for i in range(5)]
 
-        weights = [float(weight_dict[str(i)]) for i in range(5)]
-
-    logger.info(f"Loaded class weights: {weights}")
+    logger.info(f"Loaded 5-class weights: {weights}")
 
     if TORCH_AVAILABLE:
         tensor_weights = torch.tensor(weights, dtype=torch.float32)

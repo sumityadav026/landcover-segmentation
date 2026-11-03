@@ -474,3 +474,4 @@ if __name__ == "__main__":
         checkpoint_path=args.checkpoint,
         output_dir=args.output_dir,
     )
+
