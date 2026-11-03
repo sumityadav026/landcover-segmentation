@@ -8,8 +8,12 @@ Usage:
 """
 
 import os
+import sys
 import argparse
 import logging
+from typing import Any, Optional, Dict, Tuple, List
+
+sys.path.insert(0, os.path.abspath("."))
 
 from src.utils import logger, set_seed
 from src.dataset import get_dataloaders
@@ -102,7 +106,7 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
     parser.add_argument("--patience", type=int, default=10)
-    parser.add_argument("--data_dir", type=str, default="data")
+    parser.add_argument("--data_dir", type=str, default="data_rebuilt")
     parser.add_argument("--checkpoints_dir", type=str, default="checkpoints")
     parser.add_argument("--results_dir", type=str, default="results")
     parser.add_argument("--resume", type=str, default=None)
@@ -115,7 +119,14 @@ def main():
 
     set_seed(args.seed)
 
-    device = torch.device(args.device) if args.device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if args.device:
+        device = torch.device(args.device)
+    elif torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
     logger.info(f"Target execution device: {device}")
 
     # Build augmentations & DataLoaders
@@ -131,7 +142,7 @@ def main():
         val_transform=val_tf,
     )
 
-    class_weights = load_class_weights("results/class_distribution.json", device=device)
+    class_weights = load_class_weights("results/class_weights.json", device=device)
 
     models_to_train = ["unet", "deeplabv3plus"] if args.model == "both" else [args.model]
 

@@ -528,8 +528,11 @@ def generate_all_visualizations(
     # 4. Training Convergence curves (if checkpoint/history exists)
     for m in ["unet", "deeplabv3plus"]:
         hist_candidates = [
+            os.path.join(results_dir, f"{m}_training_history.json"),
+            f"results/{m}_training_history.json",
             f"checkpoints/{m}/history.json",
             f"/content/drive/MyDrive/landcover-segmentation/checkpoints/{m}/history.json",
+            f"/content/drive/MyDrive/landcover-segmentation/results/{m}_training_history.json",
         ]
         for hc in hist_candidates:
             if os.path.exists(hc):

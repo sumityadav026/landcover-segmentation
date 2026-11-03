@@ -1,0 +1,24 @@
+{
+  "0": 0.3305,
+  "1": 27.06,
+  "2": 0.6137,
+  "3": 4.3327,
+  "4": 12.9238,
+  "class_weights": [0.3305, 27.06, 0.6137, 4.3327, 12.9238],
+  "class_names": {
+    "0": "Background",
+    "1": "Building",
+    "2": "Woodland",
+    "3": "Water",
+    "4": "Road"
+  },
+  "metadata": {
+    "split": "train_only",
+    "total_train_tiles": 7704,
+    "total_val_tiles": 1602,
+    "total_test_tiles": 1368,
+    "total_tiles": 10674,
+    "strategy": "inverse_frequency"
+  }
+}
+

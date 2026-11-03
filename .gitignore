@@ -51,10 +51,9 @@ secrets/
 scratch/
 
 # Large Dataset Files (Managed on Google Drive / Kaggle)
-data/raw/
-data/train/
-data/val/
-data/test/
+data/
+data_rebuilt/
+tests/temp_*
 *.zip
 !landcover-segmentation.zip
 *.tar.gz
@@ -67,7 +66,11 @@ checkpoints/
 *.pth
 *.onnx
 
-# Results & Logs (Keep results directory structure via .gitkeep)
+# Results & Logs (Keep figures, metrics, and comparisons)
 results/*
 !results/.gitkeep
+!results/*.json
+!results/*.csv
+!results/figures/
+!results/figures/*.png
 

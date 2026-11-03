@@ -203,9 +203,12 @@ def check_dataset_persistence(
         drive_rebuilt_dir,
         os.path.join(drive_mount_point, "MyDrive", "data_rebuilt"),
         os.path.abspath(local_data_dir),
-        os.path.join(".", "data_rebuilt"),
-        "/content/data_rebuilt",
     ]
+    if local_data_dir == "data_rebuilt":
+        candidate_rebuilt_dirs.extend([
+            os.path.join(".", "data_rebuilt"),
+            "/content/data_rebuilt",
+        ])
 
     for candidate_dir in candidate_rebuilt_dirs:
         if os.path.exists(candidate_dir):
@@ -315,7 +318,7 @@ def scan_checkpoints(checkpoint_dir: str) -> Dict[str, Any]:
             info["can_resume"] = True
             if TORCH_AVAILABLE:
                 try:
-                    ckpt = torch.load(latest_file, map_location="cpu")
+                    ckpt = torch.load(latest_file, map_location="cpu", weights_only=False)
                     info["latest_epoch"] = ckpt.get("epoch", 0)
                     info["best_val_miou"] = ckpt.get("best_val_miou", 0.0)
                     info["best_epoch"] = ckpt.get("best_epoch", 0)
@@ -328,7 +331,7 @@ def scan_checkpoints(checkpoint_dir: str) -> Dict[str, Any]:
             info["best_path"] = best_file
             if TORCH_AVAILABLE and not info["has_latest"]:
                 try:
-                    ckpt_b = torch.load(best_file, map_location="cpu")
+                    ckpt_b = torch.load(best_file, map_location="cpu", weights_only=False)
                     info["best_epoch"] = ckpt_b.get("best_epoch", 0)
                     info["best_val_miou"] = ckpt_b.get("best_val_miou", 0.0)
                 except Exception:

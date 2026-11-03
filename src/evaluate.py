@@ -17,6 +17,8 @@ import logging
 import argparse
 from typing import Dict, Any, Optional, Tuple, List, Union
 
+sys.path.insert(0, os.path.abspath("."))
+
 import numpy as np
 
 # Setup logging
@@ -344,7 +346,12 @@ def run_test_evaluation(
     os.makedirs(output_dir, exist_ok=True)
 
     target_models = ["unet", "deeplabv3plus"] if model_name.lower() == "both" else [model_name.lower()]
-    device = "cuda" if (TORCH_AVAILABLE and torch.cuda.is_available()) else "cpu"
+    if TORCH_AVAILABLE and torch.cuda.is_available():
+        device = "cuda"
+    elif TORCH_AVAILABLE and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
     logger.info(f"Executing evaluation pipeline on device: {device}")
 
     # Prepare test DataLoader
@@ -391,6 +398,9 @@ def run_test_evaluation(
         ckpt_to_load = checkpoint_path
         if ckpt_to_load is None:
             candidate_paths = [
+                f"checkpoints/{m_name}_best.pt",
+                f"checkpoints/{m_name}_latest.pt",
+                f"/content/drive/MyDrive/landcover-segmentation/checkpoints/{m_name}_best.pt",
                 f"/content/drive/MyDrive/landcover-segmentation/checkpoints/{m_name}/best.pt",
                 f"checkpoints/{m_name}/best.pt",
                 f"checkpoints/{m_name}/latest.pt",
@@ -403,7 +413,7 @@ def run_test_evaluation(
         if ckpt_to_load and os.path.exists(ckpt_to_load) and TORCH_AVAILABLE:
             logger.info(f"Loading weights from checkpoint: {ckpt_to_load}")
             try:
-                state = torch.load(ckpt_to_load, map_location=device)
+                state = torch.load(ckpt_to_load, map_location=device, weights_only=False)
                 model.load_state_dict(state.get("model_state_dict", state))
             except Exception as e:
                 logger.warning(f"Could not load checkpoint weights ({e}). Evaluating model in initial state.")

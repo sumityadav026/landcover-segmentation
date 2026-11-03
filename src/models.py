@@ -215,8 +215,12 @@ def count_parameters(model: Any) -> Dict[str, int]:
             "trainable_millions": 0.0,
         }
 
-    total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    def get_numel(p):
+        fn = getattr(p, "numel", 0)
+        return fn() if callable(fn) else (int(fn) if isinstance(fn, int) else 0)
+
+    total_params = sum(get_numel(p) for p in model.parameters())
+    trainable_params = sum(get_numel(p) for p in model.parameters() if getattr(p, "requires_grad", True))
     non_trainable_params = total_params - trainable_params
 
     return {

@@ -12,6 +12,7 @@ import json
 import zipfile
 import logging
 from datetime import datetime
+from typing import Dict, Any, List, Optional, Tuple
 
 # Setup logging
 logging.basicConfig(

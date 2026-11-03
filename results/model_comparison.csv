@@ -1,0 +1,3 @@
+Model,Params (M),Latency (ms),FPS,mIoU (%),mIoU no-bg (%),Pixel Acc (%),Mean Prec (%),Mean Rec (%),Mean F1 (%),Building IoU (%),Woodland IoU (%),Water IoU (%),Road IoU (%),Background IoU (%)
+UNET,24.44M,3.59,278.5,16.06%,9.37%,38.22%,33.60%,63.51%,24.03%,4.57%,0.62%,30.57%,1.72%,42.84%
+DEEPLABV3PLUS,22.44M,3.46,288.7,21.00%,14.16%,49.38%,46.42%,58.07%,31.02%,16.15%,0.33%,35.28%,4.87%,48.35%

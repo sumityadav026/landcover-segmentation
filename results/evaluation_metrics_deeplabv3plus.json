@@ -1,0 +1,119 @@
+{
+  "num_classes": 5,
+  "class_names": {
+    "0": "Background",
+    "1": "Building",
+    "2": "Woodland",
+    "3": "Water",
+    "4": "Road"
+  },
+  "total_samples": 306,
+  "pixel_accuracy": 0.49382,
+  "miou": 0.20996,
+  "miou_no_bg": 0.14159,
+  "mean_precision": 0.46416,
+  "mean_recall": 0.58066,
+  "mean_f1": 0.3102,
+  "per_class_iou": {
+    "Background": 0.48347,
+    "Building": 0.16147,
+    "Woodland": 0.00331,
+    "Water": 0.35285,
+    "Road": 0.04871
+  },
+  "per_class_precision": {
+    "Background": 0.53303,
+    "Building": 0.16341,
+    "Woodland": 0.89198,
+    "Water": 0.68266,
+    "Road": 0.04971
+  },
+  "per_class_recall": {
+    "Background": 0.8387,
+    "Building": 0.93165,
+    "Woodland": 0.00331,
+    "Water": 0.42209,
+    "Road": 0.70756
+  },
+  "per_class_f1": {
+    "Background": 0.65181,
+    "Building": 0.27805,
+    "Woodland": 0.00659,
+    "Water": 0.52164,
+    "Road": 0.0929
+  },
+  "confusion_matrix": [
+    [
+      37185925,
+      75573,
+      6422,
+      827317,
+      6242228
+    ],
+    [
+      1,
+      17515,
+      0,
+      0,
+      1284
+    ],
+    [
+      29881415,
+      10458,
+      101710,
+      74372,
+      677158
+    ],
+    [
+      2544231,
+      3546,
+      5895,
+      1939689,
+      102078
+    ],
+    [
+      151756,
+      92,
+      0,
+      0,
+      367399
+    ]
+  ],
+  "normalized_confusion_matrix": [
+    [
+      83.87,
+      0.17,
+      0.01,
+      1.87,
+      14.08
+    ],
+    [
+      0.01,
+      93.16,
+      0.0,
+      0.0,
+      6.83
+    ],
+    [
+      97.19,
+      0.03,
+      0.33,
+      0.24,
+      2.2
+    ],
+    [
+      55.36,
+      0.08,
+      0.13,
+      42.21,
+      2.22
+    ],
+    [
+      29.23,
+      0.02,
+      0.0,
+      0.0,
+      70.76
+    ]
+  ]
+}

@@ -102,7 +102,7 @@ class SegmentationTrainer:
         if criterion is not None:
             self.criterion = criterion.to(self.device)
         else:
-            class_weights = load_class_weights("results/class_distribution.json", device=self.device)
+            class_weights = load_class_weights("results/class_weights.json", device=self.device)
             self.criterion = CombinedLoss(
                 ce_weight=0.5,
                 dice_weight=0.5,
@@ -312,7 +312,7 @@ class SegmentationTrainer:
             raise FileNotFoundError(f"Checkpoint not found at: {checkpoint_path}")
 
         logger.info(f"Loading checkpoint for [{self.model_name}] from {checkpoint_path}...")
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
 
         self.model.load_state_dict(checkpoint["model_state_dict"])
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])

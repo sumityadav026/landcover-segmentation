@@ -1,0 +1,86 @@
+{
+  "splits": {
+    "train": {
+      "source_images_count": 2,
+      "tiles_count": 8,
+      "class_pixel_counts": {
+        "0": 418882,
+        "1": 419285,
+        "2": 420089,
+        "3": 418832,
+        "4": 420064
+      }
+    },
+    "val": {
+      "source_images_count": 1,
+      "tiles_count": 4,
+      "class_pixel_counts": {
+        "0": 209747,
+        "1": 209200,
+        "2": 209880,
+        "3": 209471,
+        "4": 210278
+      }
+    },
+    "test": {
+      "source_images_count": 1,
+      "tiles_count": 4,
+      "class_pixel_counts": {
+        "0": 210030,
+        "1": 209913,
+        "2": 209402,
+        "3": 209898,
+        "4": 209333
+      }
+    }
+  },
+  "global_class_pixels": {
+    "0": 838659,
+    "1": 838398,
+    "2": 839371,
+    "3": 838201,
+    "4": 839675
+  },
+  "total_tiles": 16,
+  "tile_size": 512,
+  "edge_handling": "discard",
+  "class_distribution": {
+    "0": {
+      "name": "Background",
+      "pixel_count": 838659,
+      "percentage": 19.9952,
+      "ce_weight": 1.0002
+    },
+    "1": {
+      "name": "Building",
+      "pixel_count": 838398,
+      "percentage": 19.989,
+      "ce_weight": 1.0006
+    },
+    "2": {
+      "name": "Woodland",
+      "pixel_count": 839371,
+      "percentage": 20.0122,
+      "ce_weight": 0.9994
+    },
+    "3": {
+      "name": "Water",
+      "pixel_count": 838201,
+      "percentage": 19.9843,
+      "ce_weight": 1.0008
+    },
+    "4": {
+      "name": "Road",
+      "pixel_count": 839675,
+      "percentage": 20.0194,
+      "ce_weight": 0.999
+    }
+  },
+  "class_weights_ce": {
+    "0": 1.0002,
+    "1": 1.0006,
+    "2": 0.9994,
+    "3": 1.0008,
+    "4": 0.999
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "0": {
+    "name": "Background",
+    "pixel_count": 838659,
+    "percentage": 19.9952,
+    "ce_weight": 1.0002
+  },
+  "1": {
+    "name": "Building",
+    "pixel_count": 838398,
+    "percentage": 19.989,
+    "ce_weight": 1.0006
+  },
+  "2": {
+    "name": "Woodland",
+    "pixel_count": 839371,
+    "percentage": 20.0122,
+    "ce_weight": 0.9994
+  },
+  "3": {
+    "name": "Water",
+    "pixel_count": 838201,
+    "percentage": 19.9843,
+    "ce_weight": 1.0008
+  },
+  "4": {
+    "name": "Road",
+    "pixel_count": 839675,
+    "percentage": 20.0194,
+    "ce_weight": 0.999
+  }
+}

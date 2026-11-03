@@ -1,0 +1,38 @@
+{
+  "epoch": [
+    1
+  ],
+  "train_loss": [
+    1.04527
+  ],
+  "train_ce_loss": [
+    1.21035
+  ],
+  "train_dice_loss": [
+    0.88018
+  ],
+  "val_loss": [
+    1.48568
+  ],
+  "val_ce_loss": [
+    2.04044
+  ],
+  "val_dice_loss": [
+    0.93093
+  ],
+  "val_miou": [
+    0.04539
+  ],
+  "val_miou_no_bg": [
+    0.05468
+  ],
+  "val_pixel_accuracy": [
+    0.0664
+  ],
+  "lr": [
+    0.0001
+  ],
+  "epoch_duration_sec": [
+    119.87
+  ]
+}
