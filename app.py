@@ -8,6 +8,7 @@ Models: U-Net (ResNet-34) & DeepLabV3+ (ResNet-34)
 import os
 import io
 import time
+from typing import Tuple, Any, Optional, Dict, List
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -66,13 +67,44 @@ except ImportError:
     DEFAULT_DEVICE = "cpu"
 
 
+def resolve_safe_device(device_str: str) -> Tuple[Any, str, Optional[str]]:
+    """
+    Safely resolve compute device with automatic fallback and explanatory guidance.
+    Prevents crash on macOS when CUDA is selected.
+    """
+    if not TORCH_AVAILABLE:
+        return None, "cpu", "PyTorch is not available."
+
+    clean_str = device_str.lower().split()[0]  # Extracts 'cuda', 'mps', or 'cpu'
+    warning = None
+
+    if "cuda" in clean_str:
+        if torch.cuda.is_available():
+            return torch.device("cuda"), "cuda", None
+        else:
+            fallback = "mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu"
+            warning = (
+                f"ℹ️ **CUDA is not available on macOS.** Mac hardware uses Apple Silicon (Metal Performance Shaders - `mps`) "
+                f"or CPU rather than NVIDIA CUDA drivers. Inference was automatically routed to **{fallback.upper()}**."
+            )
+            return torch.device(fallback), fallback, warning
+    elif "mps" in clean_str:
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return torch.device("mps"), "mps", None
+        else:
+            warning = "ℹ️ **Apple Silicon MPS is not available on this machine.** Automatically falling back to CPU."
+            return torch.device("cpu"), "cpu", warning
+    else:
+        return torch.device("cpu"), "cpu", None
+
+
 @st.cache_resource(show_spinner=False)
 def load_segmentation_model(model_name: str, device_str: str):
     """Load or initialize U-Net or DeepLabV3+ architecture with weights."""
     if not TORCH_AVAILABLE:
         return None
 
-    device = torch.device(device_str)
+    device, actual_device_name, warning_msg = resolve_safe_device(device_str)
     from src.models import build_unet, build_deeplabv3plus
 
     if "unet" in model_name.lower():
@@ -115,9 +147,23 @@ def load_segmentation_model(model_name: str, device_str: str):
             except Exception:
                 pass
 
-    model = model.to(device)
+    try:
+        model = model.to(device)
+    except Exception as e:
+        # Fallback to CPU if MPS or CUDA tensor allocation fails
+        device = torch.device("cpu")
+        actual_device_name = "cpu"
+        model = model.to(device)
+        warning_msg = f"Device error ({e}). Automatically fell back to CPU."
+
     model.eval()
-    return {"model": model, "loaded_checkpoint": loaded_ckpt, "device": device}
+    return {
+        "model": model,
+        "loaded_checkpoint": loaded_ckpt,
+        "device": device,
+        "device_name": actual_device_name,
+        "warning": warning_msg,
+    }
 
 
 def mask_to_color_image(mask_2d: np.ndarray) -> np.ndarray:
@@ -197,10 +243,21 @@ selected_model_type = st.sidebar.selectbox(
     help="U-Net offers fast high-resolution skip connections; DeepLabV3+ utilizes ASPP for multi-scale context.",
 )
 
+# Compute Hardware Options
+device_options = []
+if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+    device_options.append("mps (Apple Silicon GPU)")
+if torch.cuda.is_available():
+    device_options.append("cuda (NVIDIA GPU)")
+else:
+    device_options.append("cuda (NVIDIA - Cloud / Colab only)")
+device_options.append("cpu (Standard CPU)")
+
 device_choice = st.sidebar.selectbox(
     "Compute Hardware",
-    [DEFAULT_DEVICE] + ([d for d in ["cpu", "mps", "cuda"] if d != DEFAULT_DEVICE and (d != "mps" or (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()))]),
+    device_options,
     index=0,
+    help="Select compute device. On Mac, Apple Silicon uses 'mps'. 'cuda' is for NVIDIA GPUs in Google Colab or Linux servers.",
 )
 
 opacity = st.sidebar.slider(
@@ -260,6 +317,9 @@ if input_pil is not None:
         # Inference pipeline
         model_wrapper = load_segmentation_model(selected_model_type, device_choice)
         
+        if model_wrapper is not None and model_wrapper.get("warning"):
+            st.info(model_wrapper["warning"])
+
         if model_wrapper is not None and model_wrapper["model"] is not None:
             # PyTorch inference
             dev = model_wrapper["device"]
