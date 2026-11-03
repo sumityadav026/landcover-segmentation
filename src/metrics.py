@@ -136,8 +136,14 @@ class MetricTracker:
 
         denominator = tp + fp + fn
         per_class_iou = {}
+        per_class_precision = {}
+        per_class_recall = {}
+        per_class_f1 = {}
         valid_ious = []
         valid_ious_no_bg = []
+        valid_precs = []
+        valid_recalls = []
+        valid_f1s = []
 
         for c in range(self.num_classes):
             name = self.class_names.get(c, f"Class_{c}")
@@ -147,20 +153,63 @@ class MetricTracker:
                 # Class not present in ground truth or predictions
                 iou_c = 1.0 if (tp[c] == 0 and fp[c] == 0 and fn[c] == 0) else 0.0
 
+            # Precision = TP / (TP + FP)
+            pred_count = tp[c] + fp[c]
+            if pred_count > 0:
+                prec_c = float(tp[c] / pred_count)
+            else:
+                prec_c = 0.0
+
+            # Recall = TP / (TP + FN)
+            true_count = tp[c] + fn[c]
+            if true_count > 0:
+                rec_c = float(tp[c] / true_count)
+            else:
+                rec_c = 0.0
+
+            # F1 = 2 * P * R / (P + R)
+            if (prec_c + rec_c) > 0:
+                f1_c = float(2.0 * prec_c * rec_c / (prec_c + rec_c))
+            else:
+                f1_c = 0.0
+
             per_class_iou[name] = round(iou_c, 5)
+            per_class_precision[name] = round(prec_c, 5)
+            per_class_recall[name] = round(rec_c, 5)
+            per_class_f1[name] = round(f1_c, 5)
+
             valid_ious.append(iou_c)
+            valid_precs.append(prec_c)
+            valid_recalls.append(rec_c)
+            valid_f1s.append(f1_c)
+
             if c > 0:  # Exclude background (class 0)
                 valid_ious_no_bg.append(iou_c)
 
         miou = float(np.mean(valid_ious)) if valid_ious else 0.0
         miou_no_bg = float(np.mean(valid_ious_no_bg)) if valid_ious_no_bg else 0.0
         pixel_acc = float(tp.sum() / total_pixels)
+        mean_prec = float(np.mean(valid_precs)) if valid_precs else 0.0
+        mean_rec = float(np.mean(valid_recalls)) if valid_recalls else 0.0
+        mean_f1 = float(np.mean(valid_f1s)) if valid_f1s else 0.0
+
+        # Row-normalized confusion matrix (percentages)
+        row_sums = cm.sum(axis=1, keepdims=True).astype(np.float64)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            norm_cm = np.where(row_sums > 0, (cm / row_sums) * 100.0, 0.0)
 
         return {
             "confusion_matrix": cm,
+            "normalized_confusion_matrix": np.round(norm_cm, 2),
             "per_class_iou": per_class_iou,
+            "per_class_precision": per_class_precision,
+            "per_class_recall": per_class_recall,
+            "per_class_f1": per_class_f1,
             "miou": round(miou, 5),
             "miou_no_bg": round(miou_no_bg, 5),
             "pixel_accuracy": round(pixel_acc, 5),
+            "mean_precision": round(mean_prec, 5),
+            "mean_recall": round(mean_rec, 5),
+            "mean_f1": round(mean_f1, 5),
         }
 

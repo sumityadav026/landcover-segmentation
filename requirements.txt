@@ -16,9 +16,10 @@ scikit-learn>=1.2.0
 torchmetrics>=1.0.0
 pandas>=2.0.0
 
-# Visualization & Logging
+# Visualization & Reporting
 matplotlib>=3.7.0
 tqdm>=4.65.0
+reportlab>=4.0.0
 
 # Configuration & Utilities
 pyyaml>=6.0

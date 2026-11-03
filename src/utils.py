@@ -80,10 +80,12 @@ def load_config(config_path: str = "configs/config.yaml") -> Dict[str, Any]:
             config = yaml.safe_load(f)
         return config
     except ImportError:
-        # Fallback minimal YAML parser for basic key-value / nested structures if pyyaml is missing
-        logger.warning("PyYAML not found. Falling back to built-in JSON / default config loader.")
-        # If a json mirror exists or simple parsing
-        raise ImportError("pyyaml is required to load configs/config.yaml. Please install pyyaml.")
+        # Fallback minimal loader if pyyaml is missing
+        json_path = os.path.splitext(config_path)[0] + ".json"
+        if os.path.exists(json_path):
+            with open(json_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        raise ImportError("pyyaml is required to load YAML config files. Please install pyyaml or provide a JSON config.")
 
 
 def mask_to_rgb(

@@ -47,12 +47,16 @@ kaggle.json
 *.pem
 secrets/
 
+# Temporary Scratch Scripts
+scratch/
+
 # Large Dataset Files (Managed on Google Drive / Kaggle)
 data/raw/
 data/train/
 data/val/
 data/test/
 *.zip
+!landcover-segmentation.zip
 *.tar.gz
 *.tif
 *.tiff
