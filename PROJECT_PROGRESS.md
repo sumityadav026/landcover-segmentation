@@ -41,20 +41,27 @@
 - **Status:** **Completed & Verified**
 - **Core Deliverables:**
   - `src/models.py`:
-    - `build_unet()`: U-Net with ImageNet-pretrained ResNet-34 encoder and lateral skip connections.
-    - `build_deeplabv3plus()`: DeepLabV3+ with ImageNet-pretrained ResNet-34 encoder and Atrous Spatial Pyramid Pooling (ASPP).
+    - `build_unet()`: U-Net with ImageNet-pretrained ResNet-34 encoder and lateral skip connections (output: 5 classes).
+    - `build_deeplabv3plus()`: DeepLabV3+ with ImageNet-pretrained ResNet-34 encoder and Atrous Spatial Pyramid Pooling (ASPP) (output: 5 classes).
     - `count_parameters()`: Accurately counts total (24.43M UNet, 26.74M DeepLabV3+) and trainable parameters.
     - `estimate_model_memory()`: GPU VRAM estimation for batch size 8 with FP16 AMP.
   - `src/losses.py`:
     - `CombinedLoss`: Compound loss $0.5 \times \mathcal{L}_{\text{WCE}} + 0.5 \times \mathcal{L}_{\text{Dice}}$.
-    - `load_class_weights()`: Calculates inverse class frequencies to resolve severe class imbalance.
+    - `load_class_weights()`: Loads training-only class weights from `results/class_weights.json` (Background: 0.3305, Building: 27.0600, Woodland: 0.6137, Water: 4.3327, Road: 12.9238) strictly computed from the 7,704 training tiles.
   - `src/metrics.py`:
     - `MetricTracker`: Streaming global confusion matrix accumulation. Computes mIoU, mIoU excluding background, Pixel Accuracy, per-class Precision, Recall, and F1.
   - `src/trainer.py`:
     - `SegmentationTrainer`: Complete PyTorch AMP training loop with AdamW ($lr=1e-4, wd=1e-4$), CosineAnnealingLR ($T_{\max}=40$), gradient clipping (1.0), early stopping (patience 10), and atomic Google Drive checkpoint saving (`latest.pt`, `best.pt`).
-  - `src/train.py`: Unified CLI runner for training UNet, DeepLabV3+, or both sequentially.
-  - 1-Epoch U-Net Smoke Test: Standalone cell 18.1 in notebook verifying forward pass, loss computation, backpropagation, and checkpoint writing without triggering 40-epoch training.
-- **Testing:** 10 unit tests across `tests/test_stage2.py` and `tests/test_stage3.py`.
+  - `src/recovery.py`:
+    - Permanently bound to `data_rebuilt` (10,674 tiles: 7,704 train, 1,602 val, 1,368 test).
+    - Strict enforcement: refuses to silently fall back to any incomplete `data` directory.
+  - Cell 44 (Fast GPU Smoke Test):
+    - Full end-to-end forward/loss/backward/optimizer step for both U-Net and DeepLabV3+.
+    - Catches CUDA OOM at any step with batch size 8, cleans GPU memory, and automatically retries with batch size 4.
+    - Separate smoke checkpoints (`unet_smoke_test.pt`, `deeplabv3plus_smoke_test.pt`) strictly isolated from real checkpoints (`unet_latest.pt`, `unet_best.pt`, etc.).
+  - Sections 19 & 20: Full 40-epoch training for U-Net and DeepLabV3+ with auto-resumption from Google Drive checkpoints.
+  - Section 23: Evaluation strictly on untouched test split (1,368 tiles).
+- **Testing:** 10 unit tests across `tests/test_stage2.py` and `tests/test_stage3.py`. All passing.
 
 ---
 

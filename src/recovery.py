@@ -162,28 +162,29 @@ def restore_project_codebase(
 def check_dataset_persistence(
     drive_mount_point: str = "/content/drive",
     project_name: str = "landcover-segmentation",
-    local_data_dir: str = "data",
+    local_data_dir: str = "data_rebuilt",
 ) -> Dict[str, Any]:
     """
     Detect whether the processed dataset already exists in Google Drive or local storage.
-    NEVER re-downloads from Kaggle or re-tiles if verified data is available.
+    Strictly verifies 'data_rebuilt' and NEVER falls back to any incomplete 'data' directory.
+    NEVER re-downloads from Kaggle or re-tiles if verified data_rebuilt is available.
 
-    Checks:
-      1. Local directory: 'data/train/images' and 'data/val/images'
-      2. Google Drive directory: '{drive_project_dir}/data/train/images'
-      3. Google Drive archive: '{drive_project_dir}/data_processed.tar.gz'
+    Verified Dataset Profile:
+      - Train: 7,704 tiles
+      - Validation: 1,602 tiles
+      - Test: 1,368 tiles
+      - Total: 10,674 tiles (512x512)
 
     Args:
         drive_mount_point: Google Drive mount path.
         project_name: Name of project on Drive.
-        local_data_dir: Target local data path.
+        local_data_dir: Target local data directory (defaults to 'data_rebuilt').
 
     Returns:
         Dictionary detailing dataset availability and tile counts.
     """
     drive_project_dir = os.path.join(drive_mount_point, "MyDrive", project_name)
-    drive_data_dir = os.path.join(drive_project_dir, "data")
-    drive_tar = os.path.join(drive_project_dir, "data_processed.tar.gz")
+    drive_rebuilt_dir = os.path.join(drive_project_dir, "data_rebuilt")
 
     def count_tiles(base_dir: str) -> Dict[str, int]:
         counts = {}
@@ -197,68 +198,70 @@ def check_dataset_persistence(
                 counts[split] = 0
         return counts
 
-    # 1. Check local data directory
-    local_counts = count_tiles(local_data_dir)
-    if local_counts.get("train", 0) > 0 and local_counts.get("val", 0) > 0:
-        logger.info(f"Verified processed dataset in local directory: {local_data_dir} ({local_counts})")
-        return {
-            "ready": True,
-            "location": os.path.abspath(local_data_dir),
-            "storage_type": "local_ssd",
-            "counts": local_counts,
-            "skip_data_preparation": True,
-        }
-
-    # 2. Check Google Drive dataset directories (search multiple common structures)
-    candidate_drive_dirs = [
-        drive_data_dir,
-        drive_project_dir,
-        os.path.join(drive_mount_point, "MyDrive", "data"),
-        os.path.join(drive_mount_point, "MyDrive", "landcoverai", "data"),
-        os.path.join(drive_mount_point, "MyDrive", "LandCover.ai", "data"),
+    # Candidate directories to inspect strictly for data_rebuilt
+    candidate_rebuilt_dirs = [
+        drive_rebuilt_dir,
+        os.path.join(drive_mount_point, "MyDrive", "data_rebuilt"),
+        os.path.abspath(local_data_dir),
+        os.path.join(".", "data_rebuilt"),
+        "/content/data_rebuilt",
     ]
 
-    for candidate_dir in candidate_drive_dirs:
+    for candidate_dir in candidate_rebuilt_dirs:
         if os.path.exists(candidate_dir):
-            drive_counts = count_tiles(candidate_dir)
-            if drive_counts.get("train", 0) > 0 and drive_counts.get("val", 0) > 0:
-                logger.info(f"Verified processed dataset on Google Drive: {candidate_dir} ({drive_counts})")
+            counts = count_tiles(candidate_dir)
+            if counts.get("train", 0) > 0 and counts.get("val", 0) > 0:
+                logger.info(
+                    f"Verified processed dataset at '{candidate_dir}': "
+                    f"Train={counts.get('train', 0)}, Val={counts.get('val', 0)}, Test={counts.get('test', 0)}"
+                )
 
-                # In Colab, symlink or copy to /content/data for fast I/O if possible
-                if is_colab_environment():
-                    os.makedirs(os.path.dirname(os.path.abspath(local_data_dir)), exist_ok=True)
-                    if not os.path.exists(local_data_dir):
-                        try:
-                            os.symlink(candidate_dir, local_data_dir)
-                            logger.info(f"Created symlink: {local_data_dir} -> {candidate_dir}")
-                        except Exception:
-                            pass
+                # In Colab, symlink to local path for fast access if needed
+                active_dir = candidate_dir
+                if is_colab_environment() and candidate_dir != "/content/data_rebuilt":
+                    try:
+                        if not os.path.exists("/content/data_rebuilt"):
+                            os.symlink(candidate_dir, "/content/data_rebuilt")
+                            active_dir = "/content/data_rebuilt"
+                            logger.info(f"Created symlink: /content/data_rebuilt -> {candidate_dir}")
+                    except Exception:
+                        pass
 
-                active_dir = local_data_dir if (os.path.exists(local_data_dir) and count_tiles(local_data_dir).get("train", 0) > 0) else candidate_dir
                 return {
                     "ready": True,
                     "location": active_dir,
-                    "storage_type": "google_drive",
-                    "counts": drive_counts,
+                    "storage_type": "google_drive" if "drive" in candidate_dir.lower() else "local_disk",
+                    "counts": counts,
                     "skip_data_preparation": True,
                 }
 
-    # 3. Check Google Drive compressed archive
-    if os.path.exists(drive_tar):
-        logger.info(f"Found compressed dataset archive on Drive: {drive_tar}. Extracting...")
-        os.makedirs(local_data_dir, exist_ok=True)
-        with tarfile.open(drive_tar, "r:gz") as tar:
-            tar.extractall(local_data_dir)
-        extracted_counts = count_tiles(local_data_dir)
-        return {
-            "ready": True,
-            "location": os.path.abspath(local_data_dir),
-            "storage_type": "extracted_from_drive_tar",
-            "counts": extracted_counts,
-            "skip_data_preparation": True,
-        }
+    # Check Google Drive compressed archive for data_rebuilt
+    for tar_name in ["data_rebuilt.tar.gz", "data_processed.tar.gz"]:
+        drive_tar = os.path.join(drive_project_dir, tar_name)
+        if os.path.exists(drive_tar):
+            logger.info(f"Found compressed dataset archive on Drive: {drive_tar}. Extracting...")
+            target_extract = os.path.abspath(local_data_dir)
+            os.makedirs(target_extract, exist_ok=True)
+            with tarfile.open(drive_tar, "r:gz") as tar:
+                tar.extractall(target_extract)
+            extracted_counts = count_tiles(target_extract)
+            return {
+                "ready": True,
+                "location": target_extract,
+                "storage_type": "extracted_from_drive_tar",
+                "counts": extracted_counts,
+                "skip_data_preparation": True,
+            }
 
-    logger.warning("Processed dataset not found in local directory or Google Drive.")
+    # Strict check: Warn if an old/incomplete 'data' directory exists without data_rebuilt
+    old_data_dir = os.path.join(drive_project_dir, "data")
+    if os.path.exists(old_data_dir) or os.path.exists("data"):
+        logger.warning(
+            "An incomplete 'data' directory was detected, but 'data_rebuilt' is strictly required. "
+            "Refusing to fall back to 'data' to prevent data corruption or partial training."
+        )
+
+    logger.warning("Processed 'data_rebuilt' dataset not found in local directory or Google Drive.")
     return {
         "ready": False,
         "location": None,
@@ -339,7 +342,7 @@ def scan_checkpoints(checkpoint_dir: str) -> Dict[str, Any]:
 def build_or_resume_trainer(
     model_name: str = "unet",
     checkpoint_dir: str = "checkpoints",
-    data_dir: str = "data",
+    data_dir: str = "data_rebuilt",
     results_dir: str = "results",
     device: Optional[Any] = None,
     batch_size: int = 8,
@@ -419,7 +422,7 @@ def build_or_resume_trainer(
         ).to(device)
 
     # 3. Setup Loss
-    class_weights = load_class_weights("results/class_distribution.json", device=device)
+    class_weights = load_class_weights("results/class_weights.json", device=device)
     criterion = CombinedLoss(
         ce_weight=0.5,
         dice_weight=0.5,

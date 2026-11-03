@@ -13,10 +13,10 @@ dataset:
   name: "landcover.ai"
   kaggle_slug: "adrianboguszewski/landcoverai"
   raw_dir: "data/raw"
-  processed_dir: "data"
-  train_dir: "data/train"
-  val_dir: "data/val"
-  test_dir: "data/test"
+  processed_dir: "data_rebuilt"
+  train_dir: "data_rebuilt/train"
+  val_dir: "data_rebuilt/val"
+  test_dir: "data_rebuilt/test"
   
   # Image and Tiling Specifications
   tile_size: 512

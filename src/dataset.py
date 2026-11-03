@@ -303,7 +303,7 @@ class LandCoverDataset(Dataset):
 
 
 def get_dataloaders(
-    data_dir: str = "data",
+    data_dir: str = "data_rebuilt",
     batch_size: int = 8,
     num_workers: int = 2,
     pin_memory: bool = True,
@@ -313,6 +313,7 @@ def get_dataloaders(
 ) -> Tuple[Any, Any, Any]:
     """
     Construct PyTorch DataLoaders for train, val, and test splits.
+    Defaults to 'data_rebuilt' and resolves to verified Drive/local paths.
 
     Args:
         data_dir: Root dataset directory containing 'train', 'val', 'test' folders.
@@ -329,13 +330,26 @@ def get_dataloaders(
     if not TORCH_AVAILABLE:
         raise ImportError("PyTorch is required to create DataLoaders.")
 
+    # Resolve data_dir strictly prioritizing data_rebuilt
+    candidates = [
+        data_dir,
+        "/content/drive/MyDrive/landcover-segmentation/data_rebuilt",
+        "/content/data_rebuilt",
+        "data_rebuilt",
+    ]
+    resolved_dir = data_dir
+    for cand in candidates:
+        if cand and os.path.exists(cand) and os.path.exists(os.path.join(cand, "train")):
+            resolved_dir = cand
+            break
+
     train_tf = train_transform if train_transform is not None else get_default_transform("train")
     val_tf = val_transform if val_transform is not None else get_default_transform("val")
     test_tf = test_transform if test_transform is not None else get_default_transform("test")
 
-    train_dataset = LandCoverDataset(root_dir=data_dir, split="train", transform=train_tf)
-    val_dataset = LandCoverDataset(root_dir=data_dir, split="val", transform=val_tf)
-    test_dataset = LandCoverDataset(root_dir=data_dir, split="test", transform=test_tf)
+    train_dataset = LandCoverDataset(root_dir=resolved_dir, split="train", transform=train_tf)
+    val_dataset = LandCoverDataset(root_dir=resolved_dir, split="val", transform=val_tf)
+    test_dataset = LandCoverDataset(root_dir=resolved_dir, split="test", transform=test_tf)
 
     train_loader = DataLoader(
         train_dataset,

@@ -434,7 +434,7 @@ def tile_orthophoto_pair(
 def prepare_landcover_dataset(
     config: Optional[Dict[str, Any]] = None,
     raw_dir: str = "data/raw",
-    processed_dir: str = "data",
+    processed_dir: str = "data_rebuilt",
     tile_size: int = 512,
     stride: int = 512,
     edge_handling: str = "discard",
@@ -571,7 +571,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Prepare LandCover.ai dataset for semantic segmentation")
     parser.add_argument("--download", action="store_true", help="Download dataset from Kaggle")
     parser.add_argument("--raw_dir", type=str, default="data/raw", help="Path to raw dataset")
-    parser.add_argument("--processed_dir", type=str, default="data", help="Output directory for tiles")
+    parser.add_argument("--processed_dir", type=str, default="data_rebuilt", help="Output directory for tiles")
     parser.add_argument("--tile_size", type=int, default=512, help="Tile size in pixels")
     parser.add_argument("--stride", type=int, default=512, help="Stride in pixels")
     parser.add_argument("--edge_handling", type=str, default="discard", choices=["discard", "pad"])
